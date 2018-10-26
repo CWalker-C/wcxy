@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Iwanli\Wxxcx\Wxxcx;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Models\User;
+use Carbon\Carbon;
 
 class WxxcxController extends Controller
 {
@@ -16,6 +18,12 @@ class WxxcxController extends Controller
         $this->wxxcx = $wxxcx;
     }
 
+    /**
+     * 验证数据
+     *
+     * @param $data
+     * @return mixed
+     */
     public function validator($data)
     {
         $message = [
@@ -30,7 +38,23 @@ class WxxcxController extends Controller
     }
 
     /**
+     * 更新数据
+     *
+     * @param $data
+     * @return mixed
+     */
+    public function updateOrCreate($data)
+    {
+        $user = User::where('openid', $data['openid']);
+        if (!$user) {
+            $user = new User;
+        }
+        $user->save($data);
+    }
+
+    /**
      * 小程序登录获取用户信息
+     *
      * @author 晚黎
      * @date   2017-05-27T14:37:08+0800
      * @return [type]                   [description]
@@ -57,11 +81,30 @@ class WxxcxController extends Controller
             $encryptedData = request('encryptedData', '');  // encryptedData 和 iv 在小程序端使用 wx.getUserInfo 获取
             $iv = request('iv', '');
 
-            $userInfo = $this->wxxcx->getLoginInfo($code);//根据 code 获取用户 session_key 等信息, 返回用户openid 和 session_key
-            $openid = $userInfo['openid'] ? $userInfo['openid'] : '';
+            $user = $this->wxxcx->getLoginInfo($code);//根据 code 获取用户 session_key 等信息, 返回用户openid 和 session_key
+            $openid = $user['openid'];
+            $userInfo = $this->wxxcx->getUserInfo($encryptedData, $iv); // 获取用户信息
+            $data = [
+                'openid'        => $openid,
+                'nick_name'     => $userInfo['nickName'] ? $userInfo['nickName'] : '',
+                'city'          => $userInfo['city'] ? $userInfo['city'] : '',
+                'province'      => $userInfo['province'] ? $userInfo['province'] : '',
+                'avatar_url'    => $userInfo['avatarUrl'] ? $userInfo['avatarUrl'] : '',
+                'union_id'      => $userInfo['unionId'] ? $userInfo['unionId'] : '',
+                'updated_at'    => Carbon::now()
+            ];
+            $this->updateOrCreate($data);
+            $sessionKey = md5($data['openid'] . $data['nick_name'] . time());
+            session($sessionKey, $data['openid']);
 
-            //获取解密后的用户信息
-            return $this->wxxcx->getUserInfo($encryptedData, $iv);
+            return response()->json([
+                'nick_name'     => $userInfo['nickName'] ? $userInfo['nickName'] : '',
+                'city'          => $userInfo['city'] ? $userInfo['city'] : '',
+                'province'      => $userInfo['province'] ? $userInfo['province'] : '',
+                'avatar_url'    => $userInfo['avatarUrl'] ? $userInfo['avatarUrl'] : '',
+                'union_id'      => $userInfo['unionId'] ? $userInfo['unionId'] : '',
+                'updated_at'    => Carbon::now()
+            ]);
         }
     }
 }

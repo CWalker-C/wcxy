@@ -16,12 +16,11 @@ class CreateUsersTable extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->increments('id');
             $table->string('openid')->unique();
-            $table->string('nickName')->unique()->nullable()->default('');
+            $table->string('nick_name')->nullable()->default('');
             $table->string('city')->nullable()->default('');
             $table->string('province')->nullable()->default('');
-            $table->string('avatarUrl')->nullable()->default('');
-            $table->string('unionId')->nullable()->default('');
-            $table->string('gender')->nullable()->default('');
+            $table->string('avatar_url')->nullable()->default('');
+            $table->string('union_id')->nullable()->default('');
             $table->timestamps();
         });
     }
