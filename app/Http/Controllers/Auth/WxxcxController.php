@@ -52,12 +52,13 @@ class WxxcxController extends Controller
         $user->save($data);
     }
 
+
     /**
-     * 小程序登录获取用户信息
+     * 登录并获取用户信息
      *
-     * @author 晚黎
-     * @date   2017-05-27T14:37:08+0800
-     * @return [type]                   [description]
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Exception
      */
     public function getWxUserInfo(Request $request)
     {
@@ -95,7 +96,10 @@ class WxxcxController extends Controller
             ];
             $this->updateOrCreate($data);
             $sessionKey = md5($data['openid'] . $data['nick_name'] . time());
-            session($sessionKey, $data['openid']);
+//            var_dump($sessionKey);
+            session()->put($sessionKey, 1);
+            session()->save();
+//            var_dump(session($sessionKey));
 
             return response()->json([
                 'nick_name'     => $userInfo['nickName'] ? $userInfo['nickName'] : '',
